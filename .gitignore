@@ -25,3 +25,14 @@ Thumbs.db
 # Environment files (if any)
 .env
 .env.local
+
+
+# DBeaver workspace metadata and logs
+.metadata/
+
+# DBeaver local configuration
+.dbeaver/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
