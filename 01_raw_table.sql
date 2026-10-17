@@ -1,3 +1,5 @@
+-- CREATE DATABASE verkstaddb;
+
 -- ============================================================================
 -- Drop and reset the schema, gives me a clean slate: 
 -- drop everything → recreate raw table → reload the 9 rows.
@@ -9,17 +11,22 @@ GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO public;
 
 -- ============================================================================
--- Inlämningsuppgift 1 — underlag: exporten från Cykelverkstaden Trampen
--- Fördjupning i relationsdatabaser för utvecklare, HT-26
+-- A general rule for tables in a database.
+-- The table arbetsorder_export has a ”messy semantics” which makes difficult 
+-- to understand exactly what it means (difficult to understand its purpose).
+-- Thus when it comes to tables, each table should describe a type of thing, 
+-- each row in the table should contain data about a single such thing, and 
+-- the data we stored for each thing should be in a single row. In other words, 
+-- one type of thing per table, one thing per row, and one row per thing.
+-- 
 -- ============================================================================
--- Så här använder du filen:
---   1. Skapa en egen databas för uppgiften:   CREATE DATABASE verkstad;
---   2. Anslut till verkstad och kör hela den här filen.
---   3. Tabellen arbetsorder_export är verkstadens kalkylblad, inläst som den är.
---      Den är medvetet onormaliserad — ändra den inte, utgå från den.
+-- 
+-- 
+-- 
+-- 
 --
--- Filen kan köras om: den rensar först.
--- Testad mot PostgreSQL 18.
+--
+-- 
 -- ============================================================================
 
 DROP TABLE IF EXISTS arbetsorder_export;
