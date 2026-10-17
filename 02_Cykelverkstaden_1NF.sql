@@ -23,14 +23,18 @@ GRANT ALL ON SCHEMA public TO public;
 -- 
 -- We shall now normalise the table arbetsorder_export to satisfy the 1NF criteria.
 -- 
--- 1. Atomic Columns (Indivisible Values)
--- 2. Eliminate Repeating Groups
+-- 1. Atomic Columns (Indivisible Values) ✓ there is no comma-seperated lists.
+-- 2. Eliminate Repeating Groups kund_telefon_1 and kund_telefon_2 violate this test.
 -- 3. Unique Rows (No Duplicate Rows)
 --
 -- Key Takeaway
 -- 1NF ensures data is stored in a flat, structured format where each value is 
 -- atomic and each row is unique. It is the foundation for higher normal 
 -- forms (2NF, 3NF, etc.).
+--
+-- I have identified 2 candidate keys for the arbetsorder-export table.
+-- K1 = {order_nr, artikel_nr, styckpris}
+-- K2 = {order_nr, artikel_nr, mekaniker_namn}
 -- ============================================================================
 
 DROP TABLE IF EXISTS arbetsorder_export;
@@ -94,7 +98,8 @@ INSERT INTO arbetsorder_export VALUES
 -- Kontroll: ska ge 9 rader och 5 ordrar
 --SELECT count(*) AS rader, count(DISTINCT order_nr) AS ordrar FROM arbetsorder_export;
 
--- Check for Non-Atomic Values in Text Columns
+-- TESTS!
+-- Check for Non-Atomic Values in Text Columns.
 SELECT *
 FROM public.arbetsorder_export
 WHERE 
@@ -111,3 +116,129 @@ WHERE
   artikel_namn LIKE '%,%' OR
   leverantor LIKE '%,%' OR
   leverantor_ort LIKE '%,%';
+
+SELECT
+    column_name,
+    data_type,
+    udt_name
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'arbetsorder_export'
+  AND data_type = 'ARRAY';
+
+-- Test: Inspect the table's column names and ask whether several columns are numbered versions of the same attribute.
+SELECT
+    column_name,
+    data_type,
+    ordinal_position
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'arbetsorder_export'
+ORDER BY ordinal_position;
+
+-- Test: To identify its candidate keys, we need to determine what one row represents
+-- Test if order_nr is a key.
+-- If this returns rows, an order number occurs more than once. That rules out order_nr as the key for the entire export table.
+SELECT
+    order_nr,
+    COUNT(*) AS antal_rader
+FROM arbetsorder_export
+GROUP BY order_nr
+HAVING COUNT(*) > 1
+ORDER BY antal_rader DESC;
+
+-- Test if artikel_nr is a key.
+-- If this returns rows, an order number occurs more than once. That rules out artikel_nr as the key for the entire export table.
+SELECT
+    artikel_nr,
+    COUNT(*) AS antal_rader
+FROM arbetsorder_export
+GROUP BY artikel_nr 
+HAVING COUNT(*) > 1
+ORDER BY antal_rader DESC;
+
+-- Test if order_nr and artikel_nr is a key.
+-- If this returns rows, an order number occurs more than once. That rules out order_nr and artikel_nr as the key for the entire export table.
+SELECT
+    order_nr, artikel_nr,
+    COUNT(*) AS antal_rader
+FROM arbetsorder_export
+GROUP BY order_nr, artikel_nr 
+HAVING COUNT(*) > 1
+ORDER BY antal_rader DESC;
+
+-- Check that both columns are non-null: Fail because artikel_nr is null in the database.
+SELECT COUNT(*) AS rader_med_saknad_nyckeldel
+FROM arbetsorder_export
+WHERE order_nr IS NULL
+   OR artikel_nr IS NULL;
+
+-- Test if order_nr, artikel_nr and styckpris is a key.
+-- If this returns rows, an order number occurs more than once. That rules out order_nr, artikel_nr and styckpris as the key for the entire export table.
+SELECT
+    order_nr,
+    artikel_nr,
+    styckpris,
+    COUNT(*) AS antal_rader
+FROM arbetsorder_export
+GROUP BY order_nr, artikel_nr, styckpris
+HAVING COUNT(*) > 1
+ORDER BY antal_rader DESC;
+
+-- Test if order_nr, artikel_nr and mekaniker_namn is a key.
+-- If this returns rows, an order number occurs more than once. That rules out order_nr, artikel_nr and mekaniker_namn as the key for the entire export table.
+SELECT
+    order_nr,
+    artikel_nr,
+    mekaniker_namn,
+    COUNT(*) AS antal_rader
+FROM arbetsorder_export
+GROUP BY order_nr, artikel_nr, mekaniker_namn
+HAVING COUNT(*) > 1
+ORDER BY antal_rader DESC;
+
+-- Test whether the arbetsorder_export has duplicate rows
+-- This query identifies rows that are identical across all 19 attributes
+SELECT
+    order_nr,
+    order_datum,
+    kund_namn,
+    kund_epost,
+    kund_telefon_1,
+    kund_telefon_2,
+    cykel_ramnr,
+    cykel_marke,
+    cykel_modell,
+    mekaniker_namn,
+    mekaniker_niva,
+    timpris,
+    arbetstid_min,
+    artikel_nr,
+    artikel_namn,
+    leverantor,
+    leverantor_ort,
+    antal,
+    styckpris,
+    COUNT(*) AS antal_identiska
+FROM arbetsorder_export
+GROUP BY
+    order_nr,
+    order_datum,
+    kund_namn,
+    kund_epost,
+    kund_telefon_1,
+    kund_telefon_2,
+    cykel_ramnr,
+    cykel_marke,
+    cykel_modell,
+    mekaniker_namn,
+    mekaniker_niva,
+    timpris,
+    arbetstid_min,
+    artikel_nr,
+    artikel_namn,
+    leverantor,
+    leverantor_ort,
+    antal,
+    styckpris
+HAVING COUNT(*) > 1;
