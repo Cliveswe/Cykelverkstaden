@@ -10,7 +10,7 @@ CREATE SCHEMA public;
 GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO public;
 
--- ============================================================================
+-- =========================== 1NF ============================================
 -- A general rule for tables in a database.
 -- The table arbetsorder_export has a ”messy semantics” which makes difficult 
 -- to understand exactly what it means (difficult to understand its purpose).
@@ -167,7 +167,7 @@ GROUP BY order_nr, artikel_nr
 HAVING COUNT(*) > 1
 ORDER BY antal_rader DESC;
 
--- Check that both columns are non-null: Fail because artikel_nr is null in the database.
+-- Check that both columns are non-null: Fail because artikel_nr is null in the database for order_nr 1003.
 SELECT COUNT(*) AS rader_med_saknad_nyckeldel
 FROM arbetsorder_export
 WHERE order_nr IS NULL
