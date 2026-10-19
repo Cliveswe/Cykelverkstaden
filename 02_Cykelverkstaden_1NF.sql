@@ -242,3 +242,44 @@ GROUP BY
     antal,
     styckpris
 HAVING COUNT(*) > 1;
+
+-- ============================================================================
+--
+-- Decomposing the relation arbetsorder_export to satisfy 1NF
+--
+-- ============================================================================
+
+-- Create a phone-number relation. We can now store more than 1 telephone 
+-- number per customer without adding additional columns.
+
+drop table if exists phone_number;
+drop table if exists work_order;
+
+create table phone_number(
+	kund_epost text,
+	kund_telefon text  -- kunden har högst två nummer; tom om kunden bara har ett
+);
+
+
+-- Create a work-order relation. It is similar to the arbetsorder_export table 
+-- but without the telephone attributes.
+
+create table work_order(
+ order_nr        integer,
+    order_datum     date,
+    kund_namn       text,
+    kund_epost      text,
+    cykel_ramnr     text,
+    cykel_marke     text,
+    cykel_modell    text,
+    mekaniker_namn  text,
+    mekaniker_niva  text,           -- 'Junior' eller 'Senior'
+    timpris         numeric(8,2),   -- kr per timme, beror på nivån
+    arbetstid_min   integer,        -- total arbetstid för ordern
+    artikel_nr      text,
+    artikel_namn    text,
+    leverantor      text,
+    leverantor_ort  text,
+    antal           integer,
+    styckpris       numeric(8,2)    -- pris per styck vid den här ordern
+);
