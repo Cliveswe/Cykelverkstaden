@@ -312,4 +312,41 @@ select
     leverantor,
     leverantor_ort,
     antal,
-    styckpris from arbetsorder_export; 
+    styckpris from arbetsorder_export;
+
+-- Test the decompositions
+
+-- Rows in the original table missing from work_order
+-- Both queries should return zero rows if the data matches.
+select
+    order_nr, order_datum, kund_namn, kund_epost,
+    cykel_ramnr, cykel_marke, cykel_modell,
+    mekaniker_namn, mekaniker_niva, timpris,
+    arbetstid_min, artikel_nr, artikel_namn,
+    leverantor, leverantor_ort, antal, styckpris
+from  arbetsorder_export
+except
+select
+    order_nr, order_datum, kund_namn, kund_epost,
+    cykel_ramnr, cykel_marke, cykel_modell,
+    mekaniker_namn, mekaniker_niva, timpris,
+    arbetstid_min, artikel_nr, artikel_namn,
+    leverantor, leverantor_ort, antal, styckpris
+from work_order;
+
+-- Rows in work_order that are not in the original table
+select
+    order_nr, order_datum, kund_namn, kund_epost,
+    cykel_ramnr, cykel_marke, cykel_modell,
+    mekaniker_namn, mekaniker_niva, timpris,
+    arbetstid_min, artikel_nr, artikel_namn,
+    leverantor, leverantor_ort, antal, styckpris
+from work_order
+except
+select
+    order_nr, order_datum, kund_namn, kund_epost,
+    cykel_ramnr, cykel_marke, cykel_modell,
+    mekaniker_namn, mekaniker_niva, timpris,
+    arbetstid_min, artikel_nr, artikel_namn,
+    leverantor, leverantor_ort, antal, styckpris
+from arbetsorder_export;
