@@ -253,17 +253,27 @@ HAVING COUNT(*) > 1;
 -- number per customer without adding additional columns.
 
 drop table if exists phone_number;
-drop table if exists work_order;
 
+-- stores one phone number per row.
 create table phone_number(
 	kund_epost text,
 	kund_telefon text  -- kunden har högst två nummer; tom om kunden bara har ett
 );
 
+insert into phone_number (kund_epost, kund_telefon)
+select kund_epost, kund_telefon_1 -- insert only if it is not null
+from arbetsorder_export 
+where kund_telefon_1 is not null
+union -- UNION removes duplicate kund_epost/kund_telefon pairs.
+select kund_epost, kund_telefon_2 -- insert only if it is not null
+from arbetsorder_export
+where kund_telefon_2 is not null;
 
 -- Create a work-order relation. It is similar to the arbetsorder_export table 
 -- but without the telephone attributes.
+drop table if exists work_order;
 
+-- retains the other attributes, including the article columns.
 create table work_order(
  order_nr        integer,
     order_datum     date,
@@ -283,3 +293,23 @@ create table work_order(
     antal           integer,
     styckpris       numeric(8,2)    -- pris per styck vid den här ordern
 );
+
+insert into work_order
+select  
+	order_nr,
+	order_datum,
+    kund_namn,
+    kund_epost,
+    cykel_ramnr,
+    cykel_marke,
+    cykel_modell,
+    mekaniker_namn,
+    mekaniker_niva,           -- 'Junior' eller 'Senior'
+    timpris,   -- kr per timme, beror på nivån
+    arbetstid_min,        -- total arbetstid för ordern
+    artikel_nr,
+    artikel_namn,
+    leverantor,
+    leverantor_ort,
+    antal,
+    styckpris from arbetsorder_export; 
