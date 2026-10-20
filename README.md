@@ -1,3 +1,4 @@
+
 # Cykelverkstaden Trampen — Database Normalization
 
 ## Project overview
@@ -5,6 +6,62 @@
 This project uses sample work-order data from the fictional bicycle workshop Cykelverkstaden Trampen to explore relational database design and normalization.
 
 The starting point is a spreadsheet-style export, `arbetsorder_export`, containing work-order, customer, bicycle, mechanic, and spare-part information.
+
+## Current ER schema — 1NF
+
+The diagram shows the original relation and the two relations created during the 1NF decomposition. It represents the current stage of the project; the schema will be updated as the 2NF and 3NF stages are completed.
+
+```mermaid
+erDiagram
+    %% Original spreadsheet-style relation
+    arbetsorder_export {
+        integer order_nr
+        date order_datum
+        text kund_namn
+        text kund_epost
+        text kund_telefon_1
+        text kund_telefon_2
+        text cykel_ramnr
+        text cykel_marke
+        text cykel_modell
+        text mekaniker_namn
+        text mekaniker_niva
+        numeric timpris
+        integer arbetstid_min
+        text artikel_nr
+        text artikel_namn
+        text leverantor
+        text leverantor_ort
+        integer antal
+        numeric styckpris
+    }
+
+    %% Relations created during the 1NF decomposition
+    work_order {
+        integer order_nr
+        date order_datum
+        text kund_namn
+        text kund_epost
+        text cykel_ramnr
+        text cykel_marke
+        text cykel_modell
+        text mekaniker_namn
+        text mekaniker_niva
+        numeric timpris
+        integer arbetstid_min
+        text artikel_nr
+        text artikel_namn
+        text leverantor
+        text leverantor_ort
+        integer antal
+        numeric styckpris
+    }
+
+    phone_number {
+        text kund_epost
+        text kund_telefon
+    }
+```
 
 ## Project timeline
 
