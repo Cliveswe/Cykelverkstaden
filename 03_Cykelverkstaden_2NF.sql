@@ -169,3 +169,19 @@ select
     antal,
     styckpris from arbetsorder_export;
 
+
+
+-- =========================== 2NF ============================================
+-- A general rule for tables in a database.
+-- The table arbetsorder_export has a ”messy semantics” which makes difficult 
+-- to understand exactly what it means (difficult to understand its purpose).
+-- Thus when it comes to tables, each table should describe a type of thing, 
+-- each row in the table should contain data about a single such thing, and 
+-- the data we stored for each thing should be in a single row. In other words, 
+-- one type of thing per table, one thing per row, and one row per thing.
+-- 
+-- ============================================================================
+-- 
+-- We shall now normalise the table arbetsorder_export to satisfy the 2NF criteria.
+
+-- ============================================================================
