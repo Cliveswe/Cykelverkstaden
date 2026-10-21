@@ -130,7 +130,7 @@ drop table if exists work_order;
 
 -- retains the other attributes, including the article columns.
 create table work_order(
- order_nr        integer,
+	order_nr        integer,
     order_datum     date,
     kund_namn       text,
     kund_epost      text,
@@ -181,7 +181,48 @@ select
 -- one type of thing per table, one thing per row, and one row per thing.
 -- 
 -- ============================================================================
--- 
 -- We shall now normalise the table arbetsorder_export to satisfy the 2NF criteria.
+-- The second normal form states that a table, in addition to being in the 
+-- first normal form, may not contain any complete functional depending on parts 
+-- of the primary key.
 
 -- ============================================================================
+
+
+-- To normalize the work_order table into 2NF, we must ensure that all non-key 
+-- attributes are fully functionally dependent on the primary key (no partial dependencies). 
+-- Based on the schema provided, here's the analysis and normalization steps:
+--
+-- 1. Identify the Primary Key
+-- The table work_order lacks an explicit PRIMARY KEY constraint, thus we must make an
+-- Assumption: Within a the relation work_order, each spare-part article is recorded at most 
+-- once. Therefore, for rows representing order-part lines, (order_nr, artikel_nr) is the 
+-- minimal key and since it is the only key it is the primary key.
+-- 2. Check for Partial Dependencies
+-- Partial dependencies occur when a non-key attribute depends on only part of a 
+-- composite primary key. 
+
+
+-- Since order_nr is a single-column key, there are no partial 
+-- dependencies by definition. However, we must verify if any non-key attributes depend on other columns (e.g., cykel_ramnr, artikel_nr).
+
+-- Candidate Key Analysis
+-- The table lacks an explicit PRIMARY KEY constraint, but we make an assumption
+-- that (order_nr, artikel_nr) is a likely candidate key.
+ 
+-- Functional Dependencies
+-- order_nr → order_datum, cykel_ramnr, mekaniker_namn, arbetstid_min
+-- artikel_nr → artikel_namn, leverantor
+-- (order_nr, artikel_nr) → antal, styckpris
+
+
+
+drop table if exists part;
+
+-- one row per spar-part by article
+create table part(
+	artikel_nr      text,
+    artikel_namn    text,
+    leverantor      text,
+    leverantor_ort  text,
+);
