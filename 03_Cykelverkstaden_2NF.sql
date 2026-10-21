@@ -283,3 +283,16 @@ select
     styckpris
 from arbetsorder_export
 where artikel_nr is not null;
+
+-- Tests.
+-- Number of distinct articles
+select COUNT(*) as part_rows
+from part;
+
+-- Expected: 5
+
+-- Number of order/article combinations
+select COUNT(*) as order_part_rows
+from order_part;
+
+-- Expected: 8
