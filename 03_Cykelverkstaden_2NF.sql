@@ -218,11 +218,21 @@ select
 
 
 drop table if exists part;
+drop table if exists order_part;
 
--- one row per spar-part by article
+
+-- One row per spar-part by article.
 create table part(
 	artikel_nr      text,
     artikel_namn    text,
     leverantor      text,
     leverantor_ort  text,
+);
+
+-- One row per article recorded on a work order.
+create table order_part(
+	artikel_nr      text,
+	artikel_nr      text,
+	antal           integer,
+    styckpris       numeric(8,2)    -- pris per styck vid den här ordern
 );
