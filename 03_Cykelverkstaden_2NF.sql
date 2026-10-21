@@ -345,3 +345,26 @@ where p.artikel_nr is null;
     from arbetsorder_export
     where artikel_nr is not null
 );
+
+-- Compare order_part with the source data
+-- Again, both queries should return zero rows.
+
+-- Source order-part rows missing from order_part
+(
+    select order_nr, artikel_nr, antal, styckpris
+    from arbetsorder_export
+    where artikel_nr is not null
+	execpt
+    select order_nr, artikel_nr, antal, styckpris
+    from order_part
+);
+
+-- Order-part rows not found in the source
+(
+    select order_nr, artikel_nr, antal, styckpris
+    from order_part
+	except
+    select order_nr, artikel_nr, antal, styckpris
+    from arbetsorder_export
+    where artikel_nr is not null
+);
