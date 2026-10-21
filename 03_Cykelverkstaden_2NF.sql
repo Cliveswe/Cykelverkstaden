@@ -225,7 +225,7 @@ create table part(
 	artikel_nr      text,
     artikel_namn    text,
     leverantor      text,
-    leverantor_ort  text,
+    leverantor_ort  text
 );
 
 -- One row per article recorded on a work order.
@@ -244,3 +244,7 @@ create table order_part(
 -- part: each article number identifies one article.
 ALTER TABLE part
 ADD CONSTRAINT part_pk PRIMARY KEY (artikel_nr);
+
+-- order_part: each article can occur at most once per order.
+ALTER TABLE order_part
+ADD CONSTRAINT order_part_pk PRIMARY KEY (order_nr, artikel_nr);
