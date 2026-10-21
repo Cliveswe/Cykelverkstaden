@@ -248,3 +248,38 @@ ADD CONSTRAINT part_pk PRIMARY KEY (artikel_nr);
 -- order_part: each article can occur at most once per order.
 ALTER TABLE order_part
 ADD CONSTRAINT order_part_pk PRIMARY KEY (order_nr, artikel_nr);
+
+ALTER TABLE order_part
+ADD CONSTRAINT order_part_artikel_fk
+FOREIGN KEY (artikel_nr)
+REFERENCES part (artikel_nr);
+
+-- Insert article details, once per article.
+insert into part (
+    artikel_nr,
+    artikel_namn,
+    leverantor,
+    leverantor_ort
+)
+select distinct 
+    artikel_nr,
+    artikel_namn,
+    leverantor,
+    leverantor_ort
+from arbetsorder_export
+where artikel_nr is not null;
+
+-- Insert order/article details.
+insert into order_part (
+    order_nr,
+    artikel_nr,
+    antal,
+    styckpris
+)
+select 
+    order_nr,
+    artikel_nr,
+    antal,
+    styckpris
+from arbetsorder_export
+where artikel_nr is not null;
