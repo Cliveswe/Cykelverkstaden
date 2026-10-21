@@ -211,10 +211,9 @@ select
 -- that (order_nr, artikel_nr) is a likely candidate key.
  
 -- Functional Dependencies
--- order_nr → order_datum, cykel_ramnr, mekaniker_namn, arbetstid_min
--- artikel_nr → artikel_namn, leverantor
--- (order_nr, artikel_nr) → antal, styckpris
-
+-- order_nr -> order_datum, cykel_ramnr, mekaniker_namn, arbetstid_min
+-- artikel_nr -> artikel_namn, leverantor, leverantor_ort
+-- (order_nr, artikel_nr) -> antal, styckpris
 
 
 drop table if exists part;
@@ -231,8 +230,17 @@ create table part(
 
 -- One row per article recorded on a work order.
 create table order_part(
-	artikel_nr      text,
+	order_nr        integer,
 	artikel_nr      text,
 	antal           integer,
     styckpris       numeric(8,2)    -- pris per styck vid den här ordern
 );
+
+
+-- ============================================================================
+-- Modify tables to satisfy 2NF
+-- ============================================================================
+
+-- part: each article number identifies one article.
+ALTER TABLE part
+ADD CONSTRAINT part_pk PRIMARY KEY (artikel_nr);
