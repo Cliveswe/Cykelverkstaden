@@ -296,3 +296,15 @@ select COUNT(*) as order_part_rows
 from order_part;
 
 -- Expected: 8
+
+-- No duplicate article numbers in part
+select artikel_nr, COUNT(*)
+from part
+group by artikel_nr
+having COUNT(*) > 1;
+
+-- No duplicate order/article combinations
+select order_nr, artikel_nr, COUNT(*)
+from order_part
+group by order_nr, artikel_nr
+having COUNT(*) > 1;
