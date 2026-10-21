@@ -368,3 +368,149 @@ where p.artikel_nr is null;
     from arbetsorder_export
     where artikel_nr is not null
 );
+
+
+-- Final step is to alter the work_order table. This part is tricky.
+
+-- Modify work_order to remove the article attributes
+-- First, remove the columns that now belong in part or order_part:
+alter table work_order
+drop column artikel_nr,
+drop column artikel_namn,
+drop column leverantor,
+drop column leverantor_ort,
+drop column antal,
+drop column styckpris;
+
+-- Replace the work_order data with distinct orders
+-- Run this after dropping the six article columns:
+delete from work_order;
+-- This preserves order 1003 even though its article fields were NULL.
+insert into work_order (
+    order_nr,
+    order_datum,
+    kund_namn,
+    kund_epost,
+    cykel_ramnr,
+    cykel_marke,
+    cykel_modell,
+    mekaniker_namn,
+    mekaniker_niva,
+    timpris,
+    arbetstid_min
+)
+select distinct
+    order_nr,
+    order_datum,
+    kund_namn,
+    kund_epost,
+    cykel_ramnr,
+    cykel_marke,
+    cykel_modell,
+    mekaniker_namn,
+    mekaniker_niva,
+    timpris,
+    arbetstid_min
+from arbetsorder_export;
+
+-- Verify that each order occurs once
+select order_nr, COUNT(*)
+from work_order
+group by order_nr
+having COUNT(*) > 1;
+
+
+-- work_order: each order number identifies one work order.
+alter table work_order
+add constraint work_order_pk primary key (order_nr);
+
+-- Now we can update order_part with its other key.
+alter table order_part
+add constraint order_part_work_order_fk
+foreign key (order_nr)
+references work_order (order_nr);
+
+-- Test the 2NF tables with the arbetsorder_export table values.
+-- 1. Test that no original rows are missing or changed
+-- This query should return zero rows.
+-- Original rows missing from the reconstructed data
+SELECT
+    a.order_nr,
+    a.order_datum,
+    a.kund_namn,
+    a.kund_epost,
+    a.kund_telefon_1,
+    a.kund_telefon_2,
+    a.cykel_ramnr,
+    a.cykel_marke,
+    a.cykel_modell,
+    a.mekaniker_namn,
+    a.mekaniker_niva,
+    a.timpris,
+    a.arbetstid_min,
+    a.artikel_nr,
+    a.artikel_namn,
+    a.leverantor,
+    a.leverantor_ort,
+    a.antal,
+    a.styckpris
+FROM arbetsorder_export a
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM work_order w
+    LEFT JOIN order_part op
+        ON op.order_nr = w.order_nr
+    LEFT JOIN part p
+        ON p.artikel_nr = op.artikel_nr
+    WHERE w.order_nr = a.order_nr
+      AND w.order_datum IS NOT DISTINCT FROM a.order_datum
+      AND w.kund_namn IS NOT DISTINCT FROM a.kund_namn
+      AND w.kund_epost IS NOT DISTINCT FROM a.kund_epost
+      AND w.cykel_ramnr IS NOT DISTINCT FROM a.cykel_ramnr
+      AND w.cykel_marke IS NOT DISTINCT FROM a.cykel_marke
+      AND w.cykel_modell IS NOT DISTINCT FROM a.cykel_modell
+      AND w.mekaniker_namn IS NOT DISTINCT FROM a.mekaniker_namn
+      AND w.mekaniker_niva IS NOT DISTINCT FROM a.mekaniker_niva
+      AND w.timpris IS NOT DISTINCT FROM a.timpris
+      AND w.arbetstid_min IS NOT DISTINCT FROM a.arbetstid_min
+      AND op.artikel_nr IS NOT DISTINCT FROM a.artikel_nr
+      AND p.artikel_namn IS NOT DISTINCT FROM a.artikel_namn
+      AND p.leverantor IS NOT DISTINCT FROM a.leverantor
+      AND p.leverantor_ort IS NOT DISTINCT FROM a.leverantor_ort
+      AND op.antal IS NOT DISTINCT FROM a.antal
+      AND op.styckpris IS NOT DISTINCT FROM a.styckpris
+);
+-- This checks the order and article attributes, including rows such as order 
+-- 1003 where the article fields are NULL.
+
+-- 2. Test the phone numbers separately
+-- Your phone numbers live in phone_number, so they need their own comparison. 
+-- This query should also return zero rows.
+
+-- Original phone numbers missing from phone_number
+(
+    SELECT kund_epost, kund_telefon_1 AS kund_telefon
+    FROM arbetsorder_export
+    WHERE kund_telefon_1 IS NOT NULL
+    UNION
+    SELECT kund_epost, kund_telefon_2 AS kund_telefon
+    FROM arbetsorder_export
+    WHERE kund_telefon_2 IS NOT NULL
+)
+EXCEPT
+SELECT kund_epost, kund_telefon
+FROM phone_number;
+
+-- Run the reverse comparison too, to find any extra phone-number pairs:
+SELECT kund_epost, kund_telefon
+FROM phone_number
+EXCEPT
+(
+    SELECT kund_epost, kund_telefon_1 AS kund_telefon
+    FROM arbetsorder_export
+    WHERE kund_telefon_1 IS NOT NULL
+    UNION
+    SELECT kund_epost, kund_telefon_2 AS kund_telefon
+    FROM arbetsorder_export
+    WHERE kund_telefon_2 IS NOT NULL
+);
