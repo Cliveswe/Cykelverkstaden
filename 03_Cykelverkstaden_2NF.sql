@@ -308,3 +308,40 @@ select order_nr, artikel_nr, COUNT(*)
 from order_part
 group by order_nr, artikel_nr
 having COUNT(*) > 1;
+
+-- Check that no article references are missing
+-- This query should return zero rows.
+-- Every article in order_part must exist in part
+select op.artikel_nr
+from order_part op
+left join part p
+    on op.artikel_nr = p.artikel_nr
+where p.artikel_nr is null;
+
+-- Compare part with the source data
+-- This checks that all distinct article details in the source are 
+-- represented in part, in both directions. Both queries should return zero rows.
+
+-- Source articles missing from part
+(
+    select distinct
+        artikel_nr, artikel_namn, leverantor, leverantor_ort
+    from arbetsorder_export
+    where artikel_nr is not null
+    except
+    select
+        artikel_nr, artikel_namn, leverantor, leverantor_ort
+    from part
+);
+
+-- Articles in part that are not in the source
+(
+    select
+        artikel_nr, artikel_namn, leverantor, leverantor_ort
+    from part
+    except
+    select distinct
+        artikel_nr, artikel_namn, leverantor, leverantor_ort
+    from arbetsorder_export
+    where artikel_nr is not null
+);
