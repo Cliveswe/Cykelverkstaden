@@ -1,19 +1,18 @@
 
 -- =====================================================================================
--- ============================ 2NF TESTS! =============================================
+-- ================================ TESTS! =============================================
+-- These are data-integrity checks on the result of the transformation from 1NF to 2NF.
 -- =====================================================================================
 
 -- Number of distinct articles
 select COUNT(*) as part_rows
 from part;
-
--- Expected: 5
+-- Expected for the current sample dataset: 5 distinct articles.
 
 -- Number of order/article combinations
 select COUNT(*) as order_part_rows
 from order_part;
-
--- Expected: 8
+-- Expected for the current sample dataset: 8 order/article rows.
 
 -- No duplicate article numbers in part
 select artikel_nr, COUNT(*)
@@ -88,7 +87,8 @@ where p.artikel_nr is null;
 );
 
 
--- Verify that each order occurs once
+-- Verify that each order occurs at most once in work_order.
+-- This query should return zero rows; the primary key also enforces it.
 select order_nr, COUNT(*)
 from work_order
 group by order_nr
@@ -96,9 +96,11 @@ having COUNT(*) > 1;
 
 
 -- Test the 2NF tables with the arbetsorder_export table values.
--- 1. Test that no original rows are missing or changed
+
+-- Reconstruct the source attributes from work_order, order_part, and part.
+-- Check that every source row has a matching reconstructed row.
 -- This query should return zero rows.
--- Original rows missing from the reconstructed data
+-- It includes orders such as 1003, where the source article fields are NULL.
 SELECT
     a.order_nr,
     a.order_datum,
@@ -152,7 +154,8 @@ WHERE NOT EXISTS (
 -- Your phone numbers live in phone_number, so they need their own comparison. 
 -- This query should also return zero rows.
 
--- Original phone numbers missing from phone_number
+-- Original phone-number pairs missing from phone_number.
+-- This query should return zero rows.
 (
     SELECT kund_epost, kund_telefon_1 AS kund_telefon
     FROM arbetsorder_export
@@ -166,7 +169,8 @@ EXCEPT
 SELECT kund_epost, kund_telefon
 FROM phone_number;
 
--- Run the reverse comparison too, to find any extra phone-number pairs:
+-- Phone-number pairs in phone_number that do not occur in the source.
+-- This query should return zero rows.
 SELECT kund_epost, kund_telefon
 FROM phone_number
 EXCEPT
