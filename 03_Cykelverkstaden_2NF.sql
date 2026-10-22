@@ -21,20 +21,21 @@ GRANT ALL ON SCHEMA public TO public;
 -- 
 -- ============================================================================
 -- 
--- We shall now normalise the table arbetsorder_export to satisfy the 1NF criteria.
--- 
--- 1. Atomic Columns (Indivisible Values) ✓ there is no comma-seperated lists.
--- 2. Eliminate Repeating Groups kund_telefon_1 and kund_telefon_2 violate this test.
--- 3. Unique Rows (No Duplicate Rows)
+-- Functional dependencies in the original export, under the assumptions above:
+--
+-- order_nr -> order_datum, kund_namn, kund_epost, cykel_ramnr,
+--             cykel_marke, cykel_modell, mekaniker_namn,
+--             mekaniker_niva, timpris, arbetstid_min
+--
+-- artikel_nr -> artikel_namn, leverantor, leverantor_ort
+--
+-- (order_nr, artikel_nr) -> antal, styckpris
 --
 -- Key Takeaway
 -- 1NF ensures data is stored in a flat, structured format where each value is 
 -- atomic and each row is unique. It is the foundation for higher normal 
 -- forms (2NF, 3NF, etc.).
 --
--- I have identified 2 candidate keys for the arbetsorder-export table.
--- K1 = {order_nr, artikel_nr, styckpris}
--- K2 = {order_nr, artikel_nr, mekaniker_namn}
 -- ============================================================================
 
 DROP TABLE IF EXISTS arbetsorder_export;
@@ -109,7 +110,9 @@ INSERT INTO arbetsorder_export VALUES
 
 drop table if exists phone_number;
 
--- stores one phone number per row.
+-- phone_number: one row per customer–phone pair. The pair (kund_epost, kund_telefon) 
+-- identifies a phone record under your stated assumption; this does not imply that 
+-- email uniquely identifies a customer.
 create table phone_number(
 	kund_epost text,
 	kund_telefon text  -- kunden har högst två nummer; tom om kunden bara har ett
@@ -172,24 +175,25 @@ select
 
 
 -- =========================== 2NF ============================================
--- A general rule for tables in a database.
--- The table arbetsorder_export has a ”messy semantics” which makes difficult 
--- to understand exactly what it means (difficult to understand its purpose).
--- Thus when it comes to tables, each table should describe a type of thing, 
--- each row in the table should contain data about a single such thing, and 
--- the data we stored for each thing should be in a single row. In other words, 
--- one type of thing per table, one thing per row, and one row per thing.
--- 
+--
+-- 2NF requires a relation to be in 1NF and every non-prime attribute  to depend 
+-- on the whole of each candidate key—not just part of a composite candidate key.
+--
+-- In the raw export, order-level attributes are repeated for each article on an 
+-- order. Under the order-part key assumption (order_nr, artikel_nr):
+--
+--   order_nr  -> order-level attributes
+--   artikel_nr -> article-level attributes
+--   (order_nr, artikel_nr) -> quantity and order-specific unit price
+--
+-- The first two dependencies are partial dependencies on the composite key. I 
+-- separate the data into work_order, part, and order_part to remove those 
+-- partial dependencies.
+--
 -- ============================================================================
--- We shall now normalise the table arbetsorder_export to satisfy the 2NF criteria.
--- The second normal form states that a table, in addition to being in the 
--- first normal form, may not contain any complete functional depending on parts 
--- of the primary key.
-
--- ============================================================================
 
 
--- To normalize the work_order table into 2NF, we must ensure that all non-key 
+-- To continue to normalize the work_order table into 2NF, we must ensure that all non-key 
 -- attributes are fully functionally dependent on the primary key (no partial dependencies). 
 -- Based on the schema provided, here's the analysis and normalization steps:
 --
@@ -202,14 +206,24 @@ select
 -- Partial dependencies occur when a non-key attribute depends on only part of a 
 -- composite primary key. 
 
+-- "Key" Analysis
+-- key assumption for order-part rows:
+-- Assume each article is listed at most once per work order. Then (order_nr, artikel_nr) 
+-- identifies an order-part row.
+--
+-- This key assumption applies only to rows with a non-NULL artikel_nr. An order with no 
+-- recorded article, such as order 1003, is still a work order, but does not have an 
+-- order_part row.
 
--- Since order_nr is a single-column key, there are no partial 
--- dependencies by definition. However, we must verify if any non-key attributes depend on other columns (e.g., cykel_ramnr, artikel_nr).
+-- 2NF: The original export combines order-level attributes with order-part attributes. 
+-- For order-part rows, the assumed composite key is (order_nr, artikel_nr). Order-level 
+-- attributes depend on order_nr alone, while article attributes depend on artikel_nr alone. 
+-- These are partial dependencies on the composite key.
 
--- Candidate Key Analysis
--- The table lacks an explicit PRIMARY KEY constraint, but we make an assumption
--- that (order_nr, artikel_nr) is a likely candidate key.
- 
+-- To remove them, the data is decomposed into work_order, part, and order_part. In the 
+-- resulting work_order table, order_nr is the single-column primary key, so its non-key 
+-- attributes depend on the whole key.
+
 -- Functional Dependencies
 -- order_nr -> order_datum, cykel_ramnr, mekaniker_namn, arbetstid_min
 -- artikel_nr -> artikel_namn, leverantor, leverantor_ort
@@ -220,7 +234,7 @@ drop table if exists part;
 drop table if exists order_part;
 
 
--- One row per spar-part by article.
+-- One row per spare part, identified by article number.
 create table part(
 	artikel_nr      text,
     artikel_namn    text,
@@ -241,7 +255,7 @@ create table order_part(
 -- Modify tables to satisfy 2NF
 -- ============================================================================
 
--- part: each article number identifies one article.
+-- part: one row per article; holds attributes that describe the article.
 ALTER TABLE part
 ADD CONSTRAINT part_pk PRIMARY KEY (artikel_nr);
 
@@ -249,6 +263,7 @@ ADD CONSTRAINT part_pk PRIMARY KEY (artikel_nr);
 ALTER TABLE order_part
 ADD CONSTRAINT order_part_pk PRIMARY KEY (order_nr, artikel_nr);
 
+--order_part: one row per article listed on a work order; holds order-specific quantity and unit price.
 ALTER TABLE order_part
 ADD CONSTRAINT order_part_artikel_fk
 FOREIGN KEY (artikel_nr)
@@ -284,94 +299,12 @@ select
 from arbetsorder_export
 where artikel_nr is not null;
 
--- Tests.
--- Number of distinct articles
-select COUNT(*) as part_rows
-from part;
-
--- Expected: 5
-
--- Number of order/article combinations
-select COUNT(*) as order_part_rows
-from order_part;
-
--- Expected: 8
-
--- No duplicate article numbers in part
-select artikel_nr, COUNT(*)
-from part
-group by artikel_nr
-having COUNT(*) > 1;
-
--- No duplicate order/article combinations
-select order_nr, artikel_nr, COUNT(*)
-from order_part
-group by order_nr, artikel_nr
-having COUNT(*) > 1;
-
--- Check that no article references are missing
--- This query should return zero rows.
--- Every article in order_part must exist in part
-select op.artikel_nr
-from order_part op
-left join part p
-    on op.artikel_nr = p.artikel_nr
-where p.artikel_nr is null;
-
--- Compare part with the source data
--- This checks that all distinct article details in the source are 
--- represented in part, in both directions. Both queries should return zero rows.
-
--- Source articles missing from part
-(
-    select distinct
-        artikel_nr, artikel_namn, leverantor, leverantor_ort
-    from arbetsorder_export
-    where artikel_nr is not null
-    except
-    select
-        artikel_nr, artikel_namn, leverantor, leverantor_ort
-    from part
-);
-
--- Articles in part that are not in the source
-(
-    select
-        artikel_nr, artikel_namn, leverantor, leverantor_ort
-    from part
-    except
-    select distinct
-        artikel_nr, artikel_namn, leverantor, leverantor_ort
-    from arbetsorder_export
-    where artikel_nr is not null
-);
-
--- Compare order_part with the source data
--- Again, both queries should return zero rows.
-
--- Source order-part rows missing from order_part
-(
-    select order_nr, artikel_nr, antal, styckpris
-    from arbetsorder_export
-    where artikel_nr is not null
-	execpt
-    select order_nr, artikel_nr, antal, styckpris
-    from order_part
-);
-
--- Order-part rows not found in the source
-(
-    select order_nr, artikel_nr, antal, styckpris
-    from order_part
-	except
-    select order_nr, artikel_nr, antal, styckpris
-    from arbetsorder_export
-    where artikel_nr is not null
-);
 
 
 -- Final step is to alter the work_order table. This part is tricky.
 
+-- work_order one row per work order; holds order-level information, including orders 
+-- with no recorded article details.
 -- Modify work_order to remove the article attributes
 -- First, remove the columns that now belong in part or order_part:
 alter table work_order
@@ -413,12 +346,6 @@ select distinct
     arbetstid_min
 from arbetsorder_export;
 
--- Verify that each order occurs once
-select order_nr, COUNT(*)
-from work_order
-group by order_nr
-having COUNT(*) > 1;
-
 
 -- work_order: each order number identifies one work order.
 alter table work_order
@@ -429,88 +356,3 @@ alter table order_part
 add constraint order_part_work_order_fk
 foreign key (order_nr)
 references work_order (order_nr);
-
--- Test the 2NF tables with the arbetsorder_export table values.
--- 1. Test that no original rows are missing or changed
--- This query should return zero rows.
--- Original rows missing from the reconstructed data
-SELECT
-    a.order_nr,
-    a.order_datum,
-    a.kund_namn,
-    a.kund_epost,
-    a.kund_telefon_1,
-    a.kund_telefon_2,
-    a.cykel_ramnr,
-    a.cykel_marke,
-    a.cykel_modell,
-    a.mekaniker_namn,
-    a.mekaniker_niva,
-    a.timpris,
-    a.arbetstid_min,
-    a.artikel_nr,
-    a.artikel_namn,
-    a.leverantor,
-    a.leverantor_ort,
-    a.antal,
-    a.styckpris
-FROM arbetsorder_export a
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM work_order w
-    LEFT JOIN order_part op
-        ON op.order_nr = w.order_nr
-    LEFT JOIN part p
-        ON p.artikel_nr = op.artikel_nr
-    WHERE w.order_nr = a.order_nr
-      AND w.order_datum IS NOT DISTINCT FROM a.order_datum
-      AND w.kund_namn IS NOT DISTINCT FROM a.kund_namn
-      AND w.kund_epost IS NOT DISTINCT FROM a.kund_epost
-      AND w.cykel_ramnr IS NOT DISTINCT FROM a.cykel_ramnr
-      AND w.cykel_marke IS NOT DISTINCT FROM a.cykel_marke
-      AND w.cykel_modell IS NOT DISTINCT FROM a.cykel_modell
-      AND w.mekaniker_namn IS NOT DISTINCT FROM a.mekaniker_namn
-      AND w.mekaniker_niva IS NOT DISTINCT FROM a.mekaniker_niva
-      AND w.timpris IS NOT DISTINCT FROM a.timpris
-      AND w.arbetstid_min IS NOT DISTINCT FROM a.arbetstid_min
-      AND op.artikel_nr IS NOT DISTINCT FROM a.artikel_nr
-      AND p.artikel_namn IS NOT DISTINCT FROM a.artikel_namn
-      AND p.leverantor IS NOT DISTINCT FROM a.leverantor
-      AND p.leverantor_ort IS NOT DISTINCT FROM a.leverantor_ort
-      AND op.antal IS NOT DISTINCT FROM a.antal
-      AND op.styckpris IS NOT DISTINCT FROM a.styckpris
-);
--- This checks the order and article attributes, including rows such as order 
--- 1003 where the article fields are NULL.
-
--- 2. Test the phone numbers separately
--- Your phone numbers live in phone_number, so they need their own comparison. 
--- This query should also return zero rows.
-
--- Original phone numbers missing from phone_number
-(
-    SELECT kund_epost, kund_telefon_1 AS kund_telefon
-    FROM arbetsorder_export
-    WHERE kund_telefon_1 IS NOT NULL
-    UNION
-    SELECT kund_epost, kund_telefon_2 AS kund_telefon
-    FROM arbetsorder_export
-    WHERE kund_telefon_2 IS NOT NULL
-)
-EXCEPT
-SELECT kund_epost, kund_telefon
-FROM phone_number;
-
--- Run the reverse comparison too, to find any extra phone-number pairs:
-SELECT kund_epost, kund_telefon
-FROM phone_number
-EXCEPT
-(
-    SELECT kund_epost, kund_telefon_1 AS kund_telefon
-    FROM arbetsorder_export
-    WHERE kund_telefon_1 IS NOT NULL
-    UNION
-    SELECT kund_epost, kund_telefon_2 AS kund_telefon
-    FROM arbetsorder_export
-    WHERE kund_telefon_2 IS NOT NULL
-);
