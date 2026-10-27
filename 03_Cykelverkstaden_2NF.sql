@@ -118,6 +118,8 @@ create table phone_number(
 	kund_telefon text  -- kunden har högst två nummer; tom om kunden bara har ett
 );
 
+
+
 insert into phone_number (kund_epost, kund_telefon)
 select kund_epost, kund_telefon_1 -- insert only if it is not null
 from arbetsorder_export 
