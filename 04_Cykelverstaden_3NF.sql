@@ -505,5 +505,88 @@ CUSTOMER / PHONE_NUMBER
     unresolved because the assignment does not establish
     that kund_epost uniquely identifies a customer.
 
+Step 6: Introduce a customer surrogate key
+
+Design decision:
+Introduce kund_id as the primary key of customer.
+
+Reason:
+The assignment does not state that kund_epost is unique or that every customer 
+must have an email address. Therefore, email is not assumed to identify a customer.
+
+Proposed relation:
+
+    customer(
+        kund_id,
+        kund_namn,
+        kund_epost
+    )
+
+Functional dependency:
+
+    kund_id -> kund_namn, kund_epost
+
+Relationship changes:
+- work_order will reference customer using kund_id.
+- phone_number will reference customer using kund_id.
+
+This avoids relying on email as a customer identifier.
+
+The existing data must be mapped to kund_id during migration so that work orders 
+and phone numbers remain associated with the correct customers.
+
+
+Step 7: Consolidate keys and relationships
+
+Primary keys:
+- customer: kund_id
+- phone_number: (kund_id, kund_telefon)
+- work_order: order_nr
+- bicycle: cykel_ramnr
+- mechanic: mekaniker_namn (provisional)
+- mechanic_level: mekaniker_niva
+- part: artikel_nr
+- supplier: leverantor (provisional)
+- order_part: (order_nr, artikel_nr)
+
+Foreign keys connect:
+- phone_number to customer
+- work_order to customer, bicycle and mechanic
+- mechanic to mechanic_level
+- part to supplier
+- order_part to work_order and part
+
+The design assumes mechanic names and supplier names uniquely identify their 
+respective entities.
+
+The composite keys for phone_number and order_part assume duplicate entries are 
+not permitted for the same customer/phone or order/part combination.
+
+These assumptions must be checked against the source data and business rules 
+before constraints are added.
+
+ Data completeness and NULL handling
+
+In arbetsorder_export, NULL means that data was not
+available in the source export. It does not, by itself,
+define whether an attribute is nullable in the final schema.
+
+The source only permits NULL in:
+- kund_telefon_2
+- artikel_nr
+- artikel_namn
+- leverantor
+- leverantor_ort
+- antal
+- styckpris
+
+During normalization:
+- Missing second phone numbers are represented by the absence of a phone_number row.
+- Rows without available part information do not create order_part entries.
+- Work order 1003 must remain in work_order.
+- NOT NULL constraints are decided from the intended business rules and final relation design.
+
+Missing source information must not be interpreted as proof that the corresponding 
+business attribute is optional.
 
 */
