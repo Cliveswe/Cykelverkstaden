@@ -417,4 +417,93 @@ references work_order (order_nr);
 	This will be reviewed when deciding on final keys.
 
 
+	3NF - Step 3: Decompose part
+	The current part relation contains:
+
+    artikel_nr
+    artikel_namn
+    leverantor
+    leverantor_ort
+
+	Functional dependencies:
+
+    artikel_nr -> artikel_namn, leverantor, leverantor_ort
+    leverantor -> leverantor_ort
+
+	Assuming each supplier has one town, leverantor_ort depends transitively on artikel_nr 
+	through leverantor.
+
+	Decompose into:
+
+    part(artikel_nr, artikel_namn, leverantor)
+
+    supplier(leverantor, leverantor_ort)
+
+	Provisional assumption:
+	leverantor uniquely identifies a supplier, and each supplier has one town.
+
+
+	Step 4: Review customer and phone-number relations
+
+	Customer attributes currently stored in work_order:
+
+    kund_namn
+    kund_epost
+
+	Phone numbers are stored separately in:
+
+    phone_number(kund_epost, kund_telefon)
+
+	The assignment allows a customer to have multiple phone numbers, so storing phone 
+	numbers in separate rows avoids the original repeating phone columns.
+
+	However, the assignment does not state that kund_epost uniquely identifies a customer.
+
+	Therefore, the dependency
+
+    kund_epost -> kund_namn
+
+	cannot be assumed without an explicit design assumption.
+
+	Possible future design:
+	Introduce a customer relation with a customer_id primary key, and reference that key 
+	from work_order and phone_number.
+
+	The final customer key and foreign keys will be decided during constraint design.
+
+
+	Step 5: Consolidate functional dependencies
+
+WORK_ORDER
+    order_nr -> order_datum, kund_namn, kund_epost,
+                cykel_ramnr, mekaniker_namn, arbetstid_min
+
+BICYCLE
+    cykel_ramnr -> cykel_marke, cykel_modell
+
+MECHANIC
+    mekaniker_namn -> mekaniker_niva
+    (assuming mechanic names uniquely identify mechanics)
+
+MECHANIC_LEVEL
+    mekaniker_niva -> timpris
+
+PART
+    artikel_nr -> artikel_namn, leverantor
+
+SUPPLIER
+    leverantor -> leverantor_ort
+    (assuming each supplier has one town and supplier
+     names uniquely identify suppliers)
+
+ORDER_PART
+    (order_nr, artikel_nr) -> antal, styckpris
+    (assuming each part occurs at most once per order)
+
+CUSTOMER / PHONE_NUMBER
+    Customer identification and phone-number key remain
+    unresolved because the assignment does not establish
+    that kund_epost uniquely identifies a customer.
+
+
 */
