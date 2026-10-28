@@ -718,3 +718,20 @@ add constraint work_order_mechanic_fk
 foreign key (mekaniker_namn)
 references mechanic (mekaniker_namn);
 
+-- Remove duplicated attributes from work_order.
+-- Remove customer details now stored in customer.
+alter table work_order
+drop column kund_namn,
+drop column kund_epost;
+
+-- Remove bicycle details now stored in bicycle.
+alter table work_order
+drop column cykel_marke,
+drop column cykel_modell;
+
+-- Remove mechanic level and hourly rate.
+-- The level is stored in mechanic, and its rate in mechanic_level.
+alter table work_order
+drop column mekaniker_niva,
+drop column timpris;
+
