@@ -599,6 +599,9 @@ DROP TABLE IF EXISTS customer;
 DROP TABLE IF EXISTS phone_number;
 DROP TABLE IF EXISTS bicycle;
 DROP TABLE IF EXISTS mechanic_level;
+DROP TABLE IF EXISTS mechanic;
+DROP TABLE IF EXISTS supplier;
+DROP TABLE IF EXISTS part;
 
 -- A customer receives a generated ID because the assignment does not establish 
 -- that email addresses are unique identifiers.
@@ -616,7 +619,6 @@ CREATE TABLE phone_number (
     PRIMARY KEY (kund_id, kund_telefon)
 );
 
-
 -- A bicycle is identified by its unique frame number. Brand and model depend on that frame number.
 CREATE TABLE bicycle (
     cykel_ramnr text PRIMARY KEY,
@@ -624,10 +626,31 @@ CREATE TABLE bicycle (
     cykel_modell text NOT NULL
 );
 
-
 -- The mechanic's level is stored separately from the hourly rate because the assignment 
 -- states that the level determines the rate.
 CREATE TABLE mechanic_level (
     mekaniker_niva text PRIMARY KEY,
     timpris numeric(8,2) NOT NULL
+);
+
+-- Mechanic names are being used as identifiers for now. This assumes that two
+-- different mechanics cannot share a name.
+CREATE TABLE mechanic (
+    mekaniker_namn text PRIMARY KEY,
+    mekaniker_niva text NOT NULL
+);
+
+-- Each supplier is assumed to have one town.
+CREATE TABLE supplier (
+    leverantor text PRIMARY KEY,
+    leverantor_ort text NOT NULL
+);
+
+
+-- Part details depend on the part number.
+-- Supplier information is represented by leverantor, not repeated supplier town data.
+CREATE TABLE part (
+    artikel_nr text PRIMARY KEY,
+    artikel_namn text NOT NULL,
+    leverantor text NOT NULL
 );
