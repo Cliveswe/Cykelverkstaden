@@ -597,7 +597,7 @@ business attribute is optional.
 
 DROP TABLE IF EXISTS customer;
 DROP TABLE IF EXISTS phone_number;
-
+DROP TABLE IF EXISTS bicycle;
 
 -- A customer receives a generated ID because the assignment does not establish 
 -- that email addresses are unique identifiers.
@@ -613,4 +613,12 @@ CREATE TABLE phone_number (
     kund_id integer NOT NULL,
     kund_telefon text NOT NULL,
     PRIMARY KEY (kund_id, kund_telefon)
+);
+
+
+-- A bicycle is identified by its unique frame number. Brand and model depend on that frame number.
+CREATE TABLE bicycle (
+    cykel_ramnr text PRIMARY KEY,
+    cykel_marke text NOT NULL,
+    cykel_modell text NOT NULL
 );
