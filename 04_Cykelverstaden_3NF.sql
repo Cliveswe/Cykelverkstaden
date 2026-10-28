@@ -636,4 +636,11 @@ CREATE TABLE supplier (
     leverantor_ort text NOT NULL
 );
 
+-- ============================================================================
+-- 3NF: Populate the new tables from the existing data
+-- ============================================================================
 
+-- Customer: one row per distinct customer name/email combination.
+INSERT INTO customer (kund_namn, kund_epost)
+SELECT DISTINCT kund_namn, kund_epost
+FROM work_order;
