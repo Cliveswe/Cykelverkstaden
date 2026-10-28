@@ -69,3 +69,41 @@ left join part AS p
     on op.artikel_nr = p.artikel_nr
 where wo.order_nr is null
    or p.artikel_nr is null;
+
+-- Verify the 3NF decomposition by joining the normalized tables to 
+-- reconstruct the original spreadsheet data. The query below should 
+-- return 9 rows, matching arbetsorder_export, without including phone numbers.
+SELECT
+    wo.order_nr,
+    wo.order_datum,
+    c.kund_namn,
+    c.kund_epost,
+    b.cykel_ramnr,
+    b.cykel_marke,
+    b.cykel_modell,
+    m.mekaniker_namn,
+    m.mekaniker_niva,
+    ml.timpris,
+    wo.arbetstid_min,
+    p.artikel_nr,
+    p.artikel_namn,
+    s.leverantor,
+    s.leverantor_ort,
+    op.antal,
+    op.styckpris
+FROM work_order AS wo
+JOIN customer AS c
+    ON wo.kund_id = c.kund_id
+JOIN bicycle AS b
+    ON wo.cykel_ramnr = b.cykel_ramnr
+JOIN mechanic AS m
+    ON wo.mekaniker_namn = m.mekaniker_namn
+JOIN mechanic_level AS ml
+    ON m.mekaniker_niva = ml.mekaniker_niva
+LEFT JOIN order_part AS op
+    ON wo.order_nr = op.order_nr
+LEFT JOIN part AS p
+    ON op.artikel_nr = p.artikel_nr
+LEFT JOIN supplier AS s
+    ON p.leverantor = s.leverantor
+ORDER BY wo.order_nr, p.artikel_nr;
