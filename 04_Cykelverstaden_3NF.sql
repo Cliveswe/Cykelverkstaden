@@ -735,3 +735,15 @@ alter table work_order
 drop column mekaniker_niva,
 drop column timpris;
 
+-- Update phone_number
+-- Add the new customer ID column.
+alter table phone_number
+add column kund_id integer;
+
+-- Match each phone record to its customer using email.
+update phone_number AS pn
+set kund_id = c.kund_id
+from customer AS c
+where pn.kund_epost = c.kund_epost;
+
+
