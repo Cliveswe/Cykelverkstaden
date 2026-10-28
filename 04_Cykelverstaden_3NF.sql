@@ -686,6 +686,11 @@ add constraint part_supplier_fk
 foreign key (leverantor)
 references supplier (leverantor);
 
+-- Adding the foreign key reference in the table part does not remove that column, 
+-- so the supplier's town is still stored redundantly in part.
+alter table part
+drop column leverantor_ort;
+
 -- Add and populate kund_id
 -- Add the customer ID column to each work order.
 alter table work_order
@@ -782,3 +787,8 @@ alter column mekaniker_namn set not null;
 alter table order_part
 alter column antal set not null,
 alter column styckpris set not null;
+
+-- Every part must have a name and a supplier.
+alter table part
+alter column artikel_namn SET NOT NULL,
+alter column leverantor SET NOT NULL;
