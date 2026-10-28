@@ -766,3 +766,19 @@ primary key (kund_id, kund_telefon);
 -- Remove the old email-based customer reference.
 alter table phone_number
 drop column kund_epost;
+
+-- =============================================================================
+-- Note: we missed some important constraints that need to be strengthen.
+-- Foreign keys alone do not prevent a row from having a null foreign-key value.
+-- ============================================================================= 
+-- Every work order must reference a customer, bicycle, and mechanic.
+alter table work_order
+alter column kund_id set not null,
+alter column cykel_ramnr set not null,
+alter column mekaniker_namn set not null;
+
+-- Each order-part row must identify an order and a part,
+-- and record a quantity and order-specific unit price.
+alter table order_part
+alter column antal set not null,
+alter column styckpris set not null;

@@ -57,6 +57,15 @@ select
 from order_part as op
 order by op.order_nr, op.artikel_nr;
 
--- =====================================================================================
--- ===================== Test the decompositions =======================================
--- =====================================================================================
+-- Confirm that no work orders or order-part rows are orphaned.
+-- Must return zero rows.
+select
+    op.order_nr,
+    op.artikel_nr
+from order_part AS op
+left join work_order AS wo
+    on op.order_nr = wo.order_nr
+left join part AS p
+    on op.artikel_nr = p.artikel_nr
+where wo.order_nr is null
+   or p.artikel_nr is null;
