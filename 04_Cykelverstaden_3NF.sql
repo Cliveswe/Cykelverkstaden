@@ -590,3 +590,27 @@ Missing source information must not be interpreted as proof that the correspondi
 business attribute is optional.
 
 */
+
+-- Create the 3NF tables.
+-- These are new tables. The existing 2NF tables remain unchanged.
+-- Primary keys and required columns are defined now.
+
+DROP TABLE IF EXISTS customer;
+DROP TABLE IF EXISTS phone_number;
+
+
+-- A customer receives a generated ID because the assignment does not establish 
+-- that email addresses are unique identifiers.
+CREATE TABLE customer (
+    kund_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    kund_namn text NOT NULL,
+    kund_epost text NOT NULL
+);
+
+-- A customer can have multiple phone numbers.
+-- The combination prevents the same number being entered twice for the same customer.
+CREATE TABLE phone_number (
+    kund_id integer NOT NULL,
+    kund_telefon text NOT NULL,
+    PRIMARY KEY (kund_id, kund_telefon)
+);
