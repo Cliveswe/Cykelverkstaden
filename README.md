@@ -1,3 +1,4 @@
+
 # Cykelverkstaden Trampen — Database Normalization
 
 ## Project overview
@@ -10,7 +11,7 @@ The project documents the transformation of the source data through **First Norm
 
 ## Current ER schema — 3NF
 
-The diagram shows the original source relation and the relations created during the 1NF, 2NF, and 3NF steps. The final design separates customer, phone-number, bicycle, mechanic, mechanic-level, supplier, spare-part, work-order, and order-part data.
+The diagram shows the original source relation and the final 3NF relations. The final design separates customer, phone-number, bicycle, mechanic, mechanic-level, supplier, spare-part, work-order, and order-part data.
 
 ```mermaid
 erDiagram
@@ -94,10 +95,10 @@ erDiagram
     customer ||--o{ work_order : places
     bicycle ||--o{ work_order : concerns
     mechanic ||--o{ work_order : responsible_for
-    mechanic_level ||--o{ mechanic : defines_rate
+    mechanic_level ||--o{ mechanic : determines_rate
     supplier ||--o{ part : supplies
     work_order ||--o{ order_part : contains
-    part ||--o{ order_part : appears_in
+    part ||--o{ order_part : included_in
 ```
 
 The final schema uses `work_order` to store one row per work order and `order_part` to store spare-part lines associated with each order. A work order can exist without any rows in `order_part`, as demonstrated by order `1003`.
@@ -107,6 +108,8 @@ The `customer` relation uses a generated `kund_id` as its primary key. The desig
 The `bicycle`, `mechanic_level`, and `supplier` relations store attributes determined by their respective identifiers. The `part` relation references `supplier`, so the supplier's town is stored in `supplier` rather than duplicated in `part`.
 
 The `order_part` relation uses the composite primary key `(order_nr, artikel_nr)`, under the assumption that a part number appears at most once per work order. Its `styckpris` records the unit price for that part on that particular order.
+
+The diagram assumes that mechanic names and supplier names are unique because they are used as primary keys in the current design. This is a design assumption rather than a business rule established by the sample data.
 
 ## Project timeline
 
@@ -125,15 +128,15 @@ The 1NF step addresses the repeating phone-number columns identified in the orig
 It creates two relations:
 
 - **`work_order`** — initially contains the source attributes except `kund_telefon_1` and `kund_telefon_2`. Spare-part attributes remain at this stage, so work-order information can still be repeated when an order contains multiple parts.
-- **`phone_number`** — stores a customer email and one phone number per row.
+- **`phone_number`** — stores a customer identifier in the form used at this stage and one phone number per row.
 
-The phone-number relation is populated from both phone columns in the source. `UNION` removes duplicate email–phone pairs that occur when the same customer appears on multiple work orders.
+The phone-number relation is populated from both phone columns in the source. `UNION` removes duplicate customer–phone pairs that occur when the same customer appears on multiple work orders.
 
 This step separates the phone-number repeating group. It does not yet separate work-order attributes from spare-part line attributes.
 
 ### 3. Test the 1NF transformation — `1NF-Tests.sql`
 
-The 1NF tests were moved out of the transformation script into a separate file.
+The 1NF tests are kept in a separate file from the transformation script.
 
 The test script includes:
 
@@ -232,9 +235,34 @@ The 3NF test script should validate the final schema and its data. Relevant chec
 
 Expected row counts are specific to the sample dataset. As in the earlier test scripts, set-based comparisons should not be treated as duplicate-count checks, and data-preservation tests do not independently prove that the schema satisfies 3NF.
 
-### 8. Current scope and status
+### 8. Prepare the database for rejection tests — `05_Cykelverkstaden_reject_demonstration.sql`
 
-The project documents the normalization process from the raw source relation through 1NF, 2NF, and 3NF.
+This script prepares the database schema and constraints required by `reject_tests.sql`.
+
+It includes database setup and schema-reset operations, recreates the source data, and builds the relations needed for the final schema. It also adds the check constraints that the rejection tests are intended to demonstrate:
+
+- `work_order_arbetstid_check` rejects negative work time.
+- `customer_email_check` rejects email values that do not contain `@`.
+
+Run this script only in the project database. It resets the `public` schema, which removes existing objects in that schema. The script also contains `CREATE DATABASE verkstaddb;`; this statement can fail if the database already exists and must be run outside a transaction.
+
+### 9. Test rejected inserts — `reject_tests.sql`
+
+This script attempts three invalid inserts to demonstrate constraint enforcement.
+
+1. **Work-time check constraint:** attempts to insert work order `9999` with `arbetstid_min = -30`. The insert should be rejected by `work_order_arbetstid_check`.
+2. **Foreign-key constraint:** attempts to insert an `order_part` row for work order `9999`. The insert should be rejected by `order_part_work_order_fk` because that work order does not exist.
+3. **Email check constraint:** attempts to insert a customer with `kund_epost = 'invalid-email.com'`. The insert should be rejected by `customer_email_check` because the value does not contain `@`.
+
+Run these tests after `05_Cykelverkstaden_reject_demonstration.sql` has created the required schema and constraints.
+
+The second test assumes that work order `9999` was not successfully inserted. If the first test unexpectedly succeeds, the foreign-key test may not fail for the intended reason. Run each statement separately if your SQL client stops executing the script after the first error.
+
+These tests demonstrate selected constraints; they do not prove that every possible invalid database state is prevented.
+
+### 10. Current scope and status
+
+The project documents the normalization process from the raw source relation through 1NF, 2NF, and 3NF, and includes a separate setup and test sequence for demonstrating constraint violations.
 
 The final design separates repeating phone-number values, work-order and spare-part line data, and attributes associated with customers, bicycles, mechanics, mechanic levels, and suppliers.
 
@@ -251,23 +279,35 @@ The design decisions are based on the functional dependencies and key assumption
 | `2NF-Tests.sql` | Checks keys, references, expected sample counts, and preservation of source data after the 2NF decomposition. |
 | `04_Cykelverkstaden_3NF.sql` | Separates customer, bicycle, mechanic, mechanic-level, and supplier data into the final schema. |
 | `3NF-Tests.sql` | Tests the final schema's relationships, keys, expected data, and preservation of source information. |
-
-*Adjust the 3NF filenames in the table if your actual repository uses different names.*
+| `05_Cykelverkstaden_reject_demonstration.sql` | Prepares the schema and constraints required to run the rejection tests. |
+| `reject_tests.sql` | Attempts three invalid inserts to demonstrate check-constraint and foreign-key violations. |
+| `06_Cykelverkstaden_3NF_Simpler_approach.sql` | Alternative end-to-end normalization workflow that builds the final 3NF schema. |
 
 ## How to run
 
-1. Open the SQL files in PostgreSQL using a client such as DBeaver.
-2. Create the project database, if it does not already exist.
-3. Connect to that database.
-4. Run `01_raw_table.sql`.
-5. Run `02_Cykelverkstaden_1NF.sql`.
-6. Run `1NF-Tests.sql`.
-7. Run `03_Cykelverkstaden_2NF.sql`.
-8. Run `2NF-Tests.sql`.
-9. Run `04_Cykelverkstaden_3NF.sql`.
-10. Run `3NF-Tests.sql`.
+### Normalization workflow
 
-**Caution:** The setup scripts reset the `public` schema. Run them only in the project database, since this removes objects in that schema.
+1. Open the SQL files in PostgreSQL using a client such as DBeaver.
+2. Create the project database if it does not already exist, then connect to it.
+3. Run `01_raw_table.sql`.
+4. Run `02_Cykelverkstaden_1NF.sql`.
+5. Run `1NF-Tests.sql`.
+6. Run `03_Cykelverkstaden_2NF.sql`.
+7. Run `2NF-Tests.sql`.
+8. Run `04_Cykelverkstaden_3NF.sql`.
+9. Run `3NF-Tests.sql`.
+
+### Rejection-test workflow
+
+1. Ensure you are connected to the intended project database.
+2. Run `05_Cykelverkstaden_reject_demonstration.sql` to prepare the schema and constraints.
+3. Run `reject_tests.sql`, preferably one statement at a time if your SQL client stops on errors.
+
+### Alternative workflow
+
+`06_Cykelverkstaden_3NF_Simpler_approach.sql` is an alternative end-to-end workflow. Use it instead of the corresponding sequence of normalization scripts when you want to run that approach. Do not run it merely as the next step after the rejection tests.
+
+**Caution:** The setup scripts can reset the `public` schema. Run them only in the project database, since this removes objects in that schema. Both `05_Cykelverkstaden_reject_demonstration.sql` and `06_Cykelverkstaden_3NF_Simpler_approach.sql` should be treated as setup workflows, not harmless test-only scripts.
 
 ## Tools
 
