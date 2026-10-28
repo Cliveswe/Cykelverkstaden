@@ -603,37 +603,37 @@ DROP TABLE IF EXISTS supplier;
 
 -- A customer receives a generated ID because the assignment does not establish 
 -- that email addresses are unique identifiers.
-CREATE TABLE customer (
-    kund_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    kund_namn text NOT NULL,
-    kund_epost text NOT NULL
+create table customer (
+    kund_id integer generated always as identity primary key,
+    kund_namn text not null,
+    kund_epost text not null
 );
 
 -- A bicycle is identified by its unique frame number. Brand and model depend on that frame number.
-CREATE TABLE bicycle (
-    cykel_ramnr text PRIMARY KEY,
-    cykel_marke text NOT NULL,
-    cykel_modell text NOT NULL
+create table bicycle (
+    cykel_ramnr text primary key,
+    cykel_marke text not null,
+    cykel_modell text not null
 );
 
 -- The mechanic's level is stored separately from the hourly rate because the assignment 
 -- states that the level determines the rate.
-CREATE TABLE mechanic_level (
-    mekaniker_niva text PRIMARY KEY,
-    timpris numeric(8,2) NOT NULL
+create table mechanic_level (
+    mekaniker_niva text primary key,
+    timpris numeric(8,2) not null
 );
 
 -- Mechanic names are being used as identifiers for now. This assumes that two
 -- different mechanics cannot share a name.
-CREATE TABLE mechanic (
-    mekaniker_namn text PRIMARY KEY,
-    mekaniker_niva text NOT NULL
+create table mechanic (
+    mekaniker_namn text primary key,
+    mekaniker_niva text not null
 );
 
 -- Each supplier is assumed to have one town.
-CREATE TABLE supplier (
-    leverantor text PRIMARY KEY,
-    leverantor_ort text NOT NULL
+create table supplier (
+    leverantor text primary key,
+    leverantor_ort text not null
 );
 
 -- ============================================================================
@@ -641,27 +641,48 @@ CREATE TABLE supplier (
 -- ============================================================================
 
 -- Customer: one row per distinct customer name/email combination.
-INSERT INTO customer (kund_namn, kund_epost)
-SELECT DISTINCT kund_namn, kund_epost
-FROM work_order;
+insert into customer (kund_namn, kund_epost)
+select distinct kund_namn, kund_epost
+from work_order;
 
 -- Bicycle: one row per unique frame number.
-INSERT INTO bicycle (cykel_ramnr, cykel_marke, cykel_modell)
-SELECT DISTINCT cykel_ramnr, cykel_marke, cykel_modell
-FROM work_order;
+insert into bicycle (cykel_ramnr, cykel_marke, cykel_modell)
+select distinct cykel_ramnr, cykel_marke, cykel_modell
+from work_order;
 
 
 -- Mechanic level: one row per level and its hourly rate.
-INSERT INTO mechanic_level (mekaniker_niva, timpris)
-SELECT DISTINCT mekaniker_niva, timpris
-FROM work_order;
+-- Note: This populated before we add the foreign key from mechanic.
+insert into mechanic_level (mekaniker_niva, timpris)
+select distinct mekaniker_niva, timpris
+from work_order;
 
 -- Mechanic: one row per mechanic and their level.
-INSERT INTO mechanic (mekaniker_namn, mekaniker_niva)
-SELECT DISTINCT mekaniker_namn, mekaniker_niva
-FROM work_order;
+insert into mechanic (mekaniker_namn, mekaniker_niva)
+select distinct mekaniker_namn, mekaniker_niva
+from work_order;
 
 -- Supplier: one row per supplier and town.
-INSERT INTO supplier (leverantor, leverantor_ort)
-SELECT DISTINCT leverantor, leverantor_ort
-FROM part;
+insert into supplier (leverantor, leverantor_ort)
+select distinct leverantor, leverantor_ort
+from part;
+
+-- ============================================================================
+-- Add foreign keys for mechanic and supplier
+-- ============================================================================
+
+-- Each mechanic must reference an existing mechanic level.
+-- The hourly rate is stored once per level rather than repeated for every work order.
+alter table mechanic
+add constraint mechanic_level_fk
+foreign key (mekaniker_niva)
+references mechanic_level (mekaniker_niva);
+
+-- Each part must reference an existing supplier.
+-- The supplier's town is stored in supplier, rather than repeated for every 
+-- part supplied by that supplier.
+alter table part
+add constraint part_supplier_fk
+foreign key (leverantor)
+references supplier (leverantor);
+
