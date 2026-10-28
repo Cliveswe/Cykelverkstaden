@@ -698,3 +698,10 @@ from customer AS c
 where wo.kund_namn = c.kund_namn
   and wo.kund_epost = c.kund_epost;
 
+-- Add the customer foreign key
+-- Ensure every work order references an existing customer.
+alter table work_order
+add constraint work_order_customer_fk
+foreign key (kund_id)
+references customer (kund_id);
+
