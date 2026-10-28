@@ -644,3 +644,14 @@ CREATE TABLE supplier (
 INSERT INTO customer (kund_namn, kund_epost)
 SELECT DISTINCT kund_namn, kund_epost
 FROM work_order;
+
+-- Bicycle: one row per unique frame number.
+INSERT INTO bicycle (cykel_ramnr, cykel_marke, cykel_modell)
+SELECT DISTINCT cykel_ramnr, cykel_marke, cykel_modell
+FROM work_order;
+
+
+-- Mechanic level: one row per level and its hourly rate.
+INSERT INTO mechanic_level (mekaniker_niva, timpris)
+SELECT DISTINCT mekaniker_niva, timpris
+FROM work_order;
