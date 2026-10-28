@@ -741,9 +741,29 @@ alter table phone_number
 add column kund_id integer;
 
 -- Match each phone record to its customer using email.
-update phone_number AS pn
+update phone_number as pn
 set kund_id = c.kund_id
-from customer AS c
+from customer as c
 where pn.kund_epost = c.kund_epost;
 
+--Add constraints and remove the email column.
+-- Make sure every phone number references an existing customer.
+alter table phone_number
+add constraint phone_number_customer_fk
+foreign key (kund_id)
+references customer (kund_id);
+
+-- Require a customer ID and phone number for each record.
+alter table phone_number
+alter column kund_id set not null,
+alter column kund_telefon set not null;
+
+-- Each phone number must be unique per customer.
+alter table phone_number
+add constraint phone_number_pk
+primary key (kund_id, kund_telefon);
+
+-- Remove the old email-based customer reference.
+alter table phone_number
+drop column kund_epost;
 
