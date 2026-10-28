@@ -797,3 +797,29 @@ alter column leverantor SET NOT NULL;
 -- =============================================================================
 -- Demonstrate a reject constraint. 
 -- ============================================================================= 
+
+alter table work_order
+add constraint work_order_arbetstid_check
+check (arbetstid_min >= 0);
+
+/*
+ Expect the following error from the insert into work_order:
+ ERROR: new row for relation "work_order" violates check constraint "work_order_arbetstid_check"
+  Detail: Failing row contains (9999, 2026-10-01, WSBC-4411, Oskar Nyberg, -30, 1).
+ */
+insert into work_order (
+    order_nr,
+    order_datum,
+    kund_id,
+    cykel_ramnr,
+    mekaniker_namn,
+    arbetstid_min
+)
+values (
+    9999,
+    '2026-10-01',
+    1,
+    'WSBC-4411',
+    'Oskar Nyberg',
+    -30
+);
