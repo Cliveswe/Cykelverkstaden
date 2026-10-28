@@ -705,3 +705,16 @@ add constraint work_order_customer_fk
 foreign key (kund_id)
 references customer (kund_id);
 
+-- Add the bicycle and mechanic foreign keys.
+-- Link each work order to its bicycle by frame number.
+alter table work_order
+add constraint work_order_bicycle_fk
+foreign key (cykel_ramnr)
+references bicycle (cykel_ramnr);
+
+-- Link each work order to its responsible mechanic.
+alter table work_order
+add constraint work_order_mechanic_fk
+foreign key (mekaniker_namn)
+references mechanic (mekaniker_namn);
+
