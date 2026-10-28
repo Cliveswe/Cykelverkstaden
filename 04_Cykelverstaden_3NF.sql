@@ -686,3 +686,15 @@ add constraint part_supplier_fk
 foreign key (leverantor)
 references supplier (leverantor);
 
+-- Add and populate kund_id
+-- Add the customer ID column to each work order.
+alter table work_order
+add column kund_id integer;
+
+-- Match each work order to the customer with the same name and email.
+update work_order as wo
+set kund_id = c.kund_id
+from customer AS c
+where wo.kund_namn = c.kund_namn
+  and wo.kund_epost = c.kund_epost;
+
