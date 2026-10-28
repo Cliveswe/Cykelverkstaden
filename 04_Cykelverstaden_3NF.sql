@@ -596,12 +596,10 @@ business attribute is optional.
 -- Primary keys and required columns are defined now.
 
 DROP TABLE IF EXISTS customer;
-DROP TABLE IF EXISTS phone_number;
 DROP TABLE IF EXISTS bicycle;
 DROP TABLE IF EXISTS mechanic_level;
 DROP TABLE IF EXISTS mechanic;
 DROP TABLE IF EXISTS supplier;
-DROP TABLE IF EXISTS part;
 
 -- A customer receives a generated ID because the assignment does not establish 
 -- that email addresses are unique identifiers.
@@ -609,14 +607,6 @@ CREATE TABLE customer (
     kund_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     kund_namn text NOT NULL,
     kund_epost text NOT NULL
-);
-
--- A customer can have multiple phone numbers.
--- The combination prevents the same number being entered twice for the same customer.
-CREATE TABLE phone_number (
-    kund_id integer NOT NULL,
-    kund_telefon text NOT NULL,
-    PRIMARY KEY (kund_id, kund_telefon)
 );
 
 -- A bicycle is identified by its unique frame number. Brand and model depend on that frame number.
@@ -647,10 +637,3 @@ CREATE TABLE supplier (
 );
 
 
--- Part details depend on the part number.
--- Supplier information is represented by leverantor, not repeated supplier town data.
-CREATE TABLE part (
-    artikel_nr text PRIMARY KEY,
-    artikel_namn text NOT NULL,
-    leverantor text NOT NULL
-);
