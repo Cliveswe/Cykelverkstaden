@@ -641,31 +641,63 @@ create table supplier (
 -- ============================================================================
 
 -- Customer: one row per distinct customer name/email combination.
-insert into customer (kund_namn, kund_epost)
-select distinct kund_namn, kund_epost
-from work_order;
+insert
+	into
+	customer (kund_namn,
+	kund_epost)
+select
+	distinct kund_namn,
+	kund_epost
+from
+	work_order;
 
 -- Bicycle: one row per unique frame number.
-insert into bicycle (cykel_ramnr, cykel_marke, cykel_modell)
-select distinct cykel_ramnr, cykel_marke, cykel_modell
-from work_order;
+insert
+	into
+	bicycle (cykel_ramnr,
+	cykel_marke,
+	cykel_modell)
+select
+	distinct cykel_ramnr,
+	cykel_marke,
+	cykel_modell
+from
+	work_order;
 
 
 -- Mechanic level: one row per level and its hourly rate.
 -- Note: This populated before we add the foreign key from mechanic.
-insert into mechanic_level (mekaniker_niva, timpris)
-select distinct mekaniker_niva, timpris
-from work_order;
+insert
+	into
+	mechanic_level (mekaniker_niva,
+	timpris)
+select
+	distinct mekaniker_niva,
+	timpris
+from
+	work_order;
 
 -- Mechanic: one row per mechanic and their level.
-insert into mechanic (mekaniker_namn, mekaniker_niva)
-select distinct mekaniker_namn, mekaniker_niva
-from work_order;
+insert
+	into
+	mechanic (mekaniker_namn,
+	mekaniker_niva)
+select
+	distinct mekaniker_namn,
+	mekaniker_niva
+from
+	work_order;
 
 -- Supplier: one row per supplier and town.
-insert into supplier (leverantor, leverantor_ort)
-select distinct leverantor, leverantor_ort
-from part;
+insert
+	into
+	supplier (leverantor,
+	leverantor_ort)
+select
+	distinct leverantor,
+	leverantor_ort
+from
+	part;
 
 -- ============================================================================
 -- Add foreign keys for mechanic and supplier
@@ -697,11 +729,15 @@ alter table work_order
 add column kund_id integer;
 
 -- Match each work order to the customer with the same name and email.
-update work_order as wo
-set kund_id = c.kund_id
-from customer AS c
-where wo.kund_namn = c.kund_namn
-  and wo.kund_epost = c.kund_epost;
+update
+	work_order as wo
+set
+	kund_id = c.kund_id
+from
+	customer as c
+where
+	wo.kund_namn = c.kund_namn
+	and wo.kund_epost = c.kund_epost;
 
 -- Add the customer foreign key
 -- Ensure every work order references an existing customer.
@@ -805,15 +841,17 @@ check (arbetstid_min >= 0);
 /*
  Expect the following error from the insert into work_order:
  ERROR: new row for relation "work_order" violates check constraint "work_order_arbetstid_check"
-  Detail: Failing row contains (9999, 2026-10-01, WSBC-4411, Oskar Nyberg, -30, 1).
+ Detail: Failing row contains (9999, 2026-10-01, WSBC-4411, Oskar Nyberg, -30, 1).
  */
-insert into work_order (
+insert
+	into
+	work_order (
     order_nr,
-    order_datum,
-    kund_id,
-    cykel_ramnr,
-    mekaniker_namn,
-    arbetstid_min
+	order_datum,
+	kund_id,
+	cykel_ramnr,
+	mekaniker_namn,
+	arbetstid_min
 )
 values (
     9999,
@@ -823,3 +861,38 @@ values (
     'Oskar Nyberg',
     -30
 );
+
+-- Demonstrate a rejected foreign-key constraint.
+-- Attempt to insert an order-part row referencing a work order that does not exist.
+/*
+ * Expect the following error from the insert into order_part:
+ * ERROR: insert or update on table "order_part" violates foreign key constraint "order_part_work_order_fk"
+ * Detail: Key (order_nr)=(9999) is not present in table "work_order".
+ */
+insert
+	into
+	order_part (
+	order_nr,
+	artikel_nr,
+	antal,
+	styckpris
+)
+values (
+	9999,
+	'KE-100',
+    1,
+    259.00
+);
+
+-- Validate the epost format and that the epost must contain "@".
+alter table customer
+add constraint customer_email_check
+check (kund_epost LIKE '%@%');
+
+/*
+ * Expect the following error from the insert into customer:
+ * ERROR: new row for relation "customer" violates check constraint "customer_email_check"
+ * Detail: Failing row contains (4, Test Customer, invalid-email.com).
+ */
+insert into customer (kund_namn, kund_epost)
+values ('Test Customer', 'invalid-email.com');
