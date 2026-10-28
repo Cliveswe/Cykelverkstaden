@@ -655,3 +655,13 @@ FROM work_order;
 INSERT INTO mechanic_level (mekaniker_niva, timpris)
 SELECT DISTINCT mekaniker_niva, timpris
 FROM work_order;
+
+-- Mechanic: one row per mechanic and their level.
+INSERT INTO mechanic (mekaniker_namn, mekaniker_niva)
+SELECT DISTINCT mekaniker_namn, mekaniker_niva
+FROM work_order;
+
+-- Supplier: one row per supplier and town.
+INSERT INTO supplier (leverantor, leverantor_ort)
+SELECT DISTINCT leverantor, leverantor_ort
+FROM part;
