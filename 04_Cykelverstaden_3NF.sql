@@ -598,6 +598,7 @@ business attribute is optional.
 DROP TABLE IF EXISTS customer;
 DROP TABLE IF EXISTS phone_number;
 DROP TABLE IF EXISTS bicycle;
+DROP TABLE IF EXISTS mechanic_level;
 
 -- A customer receives a generated ID because the assignment does not establish 
 -- that email addresses are unique identifiers.
@@ -621,4 +622,12 @@ CREATE TABLE bicycle (
     cykel_ramnr text PRIMARY KEY,
     cykel_marke text NOT NULL,
     cykel_modell text NOT NULL
+);
+
+
+-- The mechanic's level is stored separately from the hourly rate because the assignment 
+-- states that the level determines the rate.
+CREATE TABLE mechanic_level (
+    mekaniker_niva text PRIMARY KEY,
+    timpris numeric(8,2) NOT NULL
 );
