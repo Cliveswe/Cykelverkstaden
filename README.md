@@ -309,6 +309,10 @@ The design decisions are based on the functional dependencies and key assumption
 
 **Caution:** The setup scripts can reset the `public` schema. Run them only in the project database, since this removes objects in that schema. Both `05_Cykelverkstaden_reject_demonstration.sql` and `06_Cykelverkstaden_3NF_Simpler_approach.sql` should be treated as setup workflows, not harmless test-only scripts.
 
+##Deletion and referential integrity
+
+The original business rules do not specify how deletion of customers, bicycles, mechanics, suppliers, parts, or work orders should be handled. The database therefore uses restrictive foreign-key behaviour by default to prevent deletion of records that are still referenced. Cascading deletion should be introduced only for dependent records whose lifecycle is intentionally tied to their parent, such as customer phone-number records. Historical work orders and their associated parts should be protected from accidental deletion unless a separate business rule explicitly permits their removal.
+
 ## Tools
 
 - PostgreSQL
